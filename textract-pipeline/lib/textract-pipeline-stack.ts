@@ -39,12 +39,12 @@ export class TextractPipelineStack extends cdk.Stack {
 
     //**********S3 Bucket******************************
     //S3 bucket for input documents and output
-    const contentBucket = new s3.Bucket(this, 'DocumentsBucket', { versioned: false});
+    const contentBucket = new s3.Bucket(this, 'HiH-TextractDocumentsBucket', { versioned: false});
 
-    const existingContentBucket = new s3.Bucket(this, 'ExistingDocumentsBucket', { versioned: false});
+    const existingContentBucket = new s3.Bucket(this, 'HiH-TextractExistingDocumentsBucket', { versioned: false});
     existingContentBucket.grantReadWrite(s3BatchOperationsRole)
 
-    const inventoryAndLogsBucket = new s3.Bucket(this, 'InventoryAndLogsBucket', { versioned: false});
+    const inventoryAndLogsBucket = new s3.Bucket(this, 'HiH-TextractInventoryAndLogsBucket', { versioned: false});
     inventoryAndLogsBucket.grantReadWrite(s3BatchOperationsRole)
 
     //**********DynamoDB Table*************************

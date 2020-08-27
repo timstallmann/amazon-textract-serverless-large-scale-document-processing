@@ -1,3 +1,4 @@
+#!/bin/bash
 echo "Copying lambda functions..."
 cp helper.py ../textract-pipeline/lambda/helper/python/helper.py
 cp datastore.py ../textract-pipeline/lambda/helper/python/datastore.py

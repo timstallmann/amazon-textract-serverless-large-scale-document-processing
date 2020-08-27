@@ -3,8 +3,15 @@ from helper import FileHelper, S3Helper
 from trp import Document
 import boto3
 
+QUERY_STRINGS = [
+    'negro',
+    'caucasian',
+    'african',
+    'race'
+]
+
 class OutputGenerator:
-    def __init__(self, documentId, response, bucketName, objectName, forms, tables, ddb):
+    def __init__(self, documentId, response, bucketName, objectName, forms, tables, ddb, queryStrings = QUERY_STRINGS):
         self.documentId = documentId
         self.response = response
         self.bucketName = bucketName
@@ -12,10 +19,12 @@ class OutputGenerator:
         self.forms = forms
         self.tables = tables
         self.ddb = ddb
+        self.queryStrings = queryStrings
 
         self.outputPath = "{}-analysis/{}/".format(objectName, documentId)
 
         self.document = Document(self.response)
+        self.docText = ''
 
     def saveItem(self, pk, sk, output):
 
@@ -25,6 +34,17 @@ class OutputGenerator:
         jsonItem['outputPath'] = output
 
         self.ddb.put_item(Item=jsonItem)
+
+    def queryText(self):
+        matches = []
+        maxLen = len(self.docText) - 1
+        for string in self.queryStrings:
+            match = self.docText.lower().find(string)
+            if match != -1:
+                matches.append(self.docText[max(match-100, 0):min(match + 100, maxLen)])
+
+        if len(matches) > 0:
+            self.ddb.put_item({ 'documentId': self.documentId, 'match': True, 'matches': matches })
 
     def _outputText(self, page, p):
         text = page.text
@@ -105,3 +125,10 @@ class OutputGenerator:
                 self._outputTable(page, p)
 
             p = p + 1
+
+        # Output full document text to a separate file.
+        self.docText = docText
+        opath = "{}-fullText.txt".format(self.outputPath)
+        S3Helper.writeToS3(docText, self.bucketName, opath)
+        self.saveItem(self.documentId, "{}-fullText".format(self.outputPath), opath)
+        self.queryText()
