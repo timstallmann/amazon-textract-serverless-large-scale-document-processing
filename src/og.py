@@ -2,24 +2,26 @@ import json
 from helper import FileHelper, S3Helper
 from trp import Document
 import boto3
+import re
 
 QUERY_STRINGS = [
     'negro',
     'caucasian',
     'african',
-    'race'
+    'race',
+    'employed for domestic purposes only'
 ]
 
 class OutputGenerator:
-    def __init__(self, documentId, response, bucketName, objectName, forms, tables, ddb, queryStrings = QUERY_STRINGS):
+    def __init__(self, documentId, response, bucketName, objectName, forms, tables, ddb):
         self.documentId = documentId
         self.response = response
         self.bucketName = bucketName
         self.objectName = objectName
-        self.forms = forms
+        self.forms = False
         self.tables = tables
         self.ddb = ddb
-        self.queryStrings = queryStrings
+        self.queryStrings = QUERY_STRINGS
 
         self.outputPath = "{}-analysis/{}/".format(objectName, documentId)
 
@@ -36,15 +38,28 @@ class OutputGenerator:
         self.ddb.put_item(Item=jsonItem)
 
     def queryText(self):
-        matches = []
+        matchTexts = []
+        matchTerms = []
         maxLen = len(self.docText) - 1
-        for string in self.queryStrings:
-            match = self.docText.lower().find(string)
-            if match != -1:
-                matches.append(self.docText[max(match-100, 0):min(match + 100, maxLen)])
+        docTextNoNewlines = self.docText.replace('\n', ' ')
+        searchDocText = self.docText.lower().replace('\n', ' ')
 
-        if len(matches) > 0:
-            self.ddb.put_item(Item={'documentId': self.documentId, 'match': True, 'matches': matches})
+        for string in self.queryStrings:
+            matches = re.finditer(string, searchDocText)
+            for match in matches:
+                if match:
+                    matchTexts.append(docTextNoNewlines[max(match.start()-200, 0):min(match.end() + 200, maxLen)])
+
+            if matchTexts:
+                matchTerms.append(string)
+
+        self.ddb.put_item(Item={'documentId': self.documentId,
+                                'outputType': 'matchOutput',
+                                'objectName': self.objectName,
+                                'isMatch': bool(matchTexts),
+                                'matchedTexts': matchTexts,
+                                'matchedTerms': matchTerms
+                                })
 
     def _outputText(self, page, p):
         text = page.text
