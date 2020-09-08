@@ -63,12 +63,14 @@ class OutputGenerator:
         searchDocText = self.docText.lower().replace('\n', ' ')
 
         for string in self.queryStrings:
-            matches = re.finditer(f'\b{string}s?\b', searchDocText)
+            hasMatch = False
+            matches = re.finditer(fr'\b{string}s?\b', searchDocText, flags=re.IGNORECASE)
             for match in matches:
                 if match:
+                    hasMatch = True
                     matchTexts.append(docTextNoNewlines[max(match.start()-200, 0):min(match.end() + 200, maxLen)])
 
-            if matchTexts:
+            if hasMatch:
                 matchTerms.append(string)
 
         self.ddb.put_item(Item={'documentId': self.documentId,
