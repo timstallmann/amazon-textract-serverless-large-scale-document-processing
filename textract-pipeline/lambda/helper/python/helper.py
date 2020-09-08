@@ -1,5 +1,6 @@
 import boto3
 from botocore.client import Config
+from botocore.exceptions import ClientError
 import os
 import csv
 import io
@@ -119,9 +120,12 @@ class S3Helper:
 
     @staticmethod
     def writeToS3(content, bucketName, s3FileName, awsRegion=None):
-        s3 = AwsHelper().getResource('s3', awsRegion)
-        object = s3.Object(bucketName, s3FileName)
-        object.put(Body=content)
+        try:
+            s3 = AwsHelper().getResource('s3', awsRegion)
+            object = s3.Object(bucketName, s3FileName)
+            object.put(Body=content)
+        except ClientError as e:
+            print(f'Error {e} saving {s3FileName} to {bucketName} in region {awsRegion}')
 
     @staticmethod
     def readFromS3(bucketName, s3FileName, awsRegion=None):

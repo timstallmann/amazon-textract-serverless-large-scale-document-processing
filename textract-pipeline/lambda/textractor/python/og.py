@@ -5,20 +5,38 @@ import boto3
 import re
 
 QUERY_STRINGS = [
+    'colored',
+    'immigrant',
     'negro',
+    'negroe',
+    'domestic',
+    'jewish',
+    'hebrew',
+    'aryan',
+    'white',
     'caucasian',
-    'african',
-    'race',
-    'employed for domestic purposes only'
+    'blood',
+    'gentile',
+    'semite',
+    'mongolian',
+    'malay',
+    'ethiopian',
+    'asian',
+    'asiatic',
+    'japanese',
+    'chinese',
+    'hindu',
 ]
+
+OUTPUT_BUCKET_NAME = 'hih-deeds-textract-output'
 
 class OutputGenerator:
     def __init__(self, documentId, response, bucketName, objectName, forms, tables, ddb):
         self.documentId = documentId
         self.response = response
-        self.bucketName = bucketName
+        self.bucketName = OUTPUT_BUCKET_NAME
         self.objectName = objectName
-        self.forms = False
+        self.forms = forms
         self.tables = tables
         self.ddb = ddb
         self.queryStrings = QUERY_STRINGS
@@ -45,7 +63,7 @@ class OutputGenerator:
         searchDocText = self.docText.lower().replace('\n', ' ')
 
         for string in self.queryStrings:
-            matches = re.finditer(string, searchDocText)
+            matches = re.finditer(f'\b{string}s?\b', searchDocText)
             for match in matches:
                 if match:
                     matchTexts.append(docTextNoNewlines[max(match.start()-200, 0):min(match.end() + 200, maxLen)])
@@ -125,7 +143,7 @@ class OutputGenerator:
         p = 1
         for page in self.document.pages:
 
-            opath = "{}page-{}-response.json".format(self.outputPath, p)
+            opath = "json/{}-page-{}.json".format(self.objectName, p)
             S3Helper.writeToS3(json.dumps(page.blocks), self.bucketName, opath)
             self.saveItem(self.documentId, "page-{}-Response".format(p), opath)
 
@@ -143,7 +161,7 @@ class OutputGenerator:
 
         # Output full document text to a separate file.
         self.docText = docText
-        opath = "{}fullText.txt".format(self.outputPath)
+        opath = "{}.txt".format(self.objectName)
         S3Helper.writeToS3(docText, self.bucketName, opath)
         self.saveItem(self.documentId, "{}fullText".format(self.outputPath), opath)
         self.queryText()
