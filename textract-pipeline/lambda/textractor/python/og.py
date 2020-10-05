@@ -5,27 +5,28 @@ import boto3
 import re
 
 QUERY_STRINGS = [
-    'colored',
-    'immigrant',
-    'negro',
-    'negroe',
-    'domestic',
-    'jewish',
-    'hebrew',
-    'aryan',
-    'white',
-    'caucasian',
-    'blood',
-    'gentile',
-    'semite',
-    'mongolian',
-    'malay',
-    'ethiopian',
-    'asian',
-    'asiatic',
-    'japanese',
-    'chinese',
-    'hindu',
+    r'(?i)\baryans?\b',
+    r'(?i)\basians?\b',
+    r'(?i)\basiatics?\b',
+    r'(?i)\bblood\b',
+    r'(?i)\bcaucasians?\b',
+    r'(?i)\bchinese\b',
+    r'(?i)\bcoloreds?\b',
+    r'(?i)\bdomestics?\b',
+    r'(?i)\bethiopians?\b',
+    r'(?i)\bgentiles?\b',
+    r'(?i)\bhebrews?\b',
+    r'(?i)\bhindus?\b',
+    r'(?i)\bimmigrants?\b',
+    r'(?i)\bjapaneses?\b',
+    r'(?i)\bjew\b',
+    r'(?i)\bjewish\b',
+    r'(?i)\bmalays?\b',
+    r'(?i)\bmongolians?\b',
+    r'(?i)\bnegroes?\b',
+    r'(?i)\bnegros?\b',
+    r'(?i)\bsemites?\b',
+    r'\bwhites?\b(?! [Oo]ak)',  # Do not match "white oak" or "white Oak"
 ]
 
 OUTPUT_BUCKET_NAME = 'hih-deeds-textract-output'
@@ -59,16 +60,15 @@ class OutputGenerator:
         matchTexts = []
         matchTerms = []
         maxLen = len(self.docText) - 1
-        docTextNoNewlines = self.docText.replace('\n', ' ')
-        searchDocText = self.docText.lower().replace('\n', ' ')
+        searchDocText = self.docText.replace('\n', ' ')
 
         for string in self.queryStrings:
             hasMatch = False
-            matches = re.finditer(fr'\b{string}s?\b', searchDocText, flags=re.IGNORECASE)
+            matches = re.finditer(string, searchDocText)
             for match in matches:
                 if match:
                     hasMatch = True
-                    matchTexts.append(docTextNoNewlines[max(match.start()-200, 0):min(match.end() + 200, maxLen)])
+                    matchTexts.append(searchDocText[max(match.start()-200, 0):min(match.end() + 200, maxLen)])
 
             if hasMatch:
                 matchTerms.append(string)
